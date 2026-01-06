@@ -617,6 +617,83 @@ export class ChatTreeView {
             }
         });
 
+        // Long-press detection for mobile context menu
+        let longPressTimer = null;
+        const LONG_PRESS_DURATION = 500; // ms
+
+        $('#chat_tree_content').on('touchstart.chatTree', '.tree-node', function(e) {
+            if (e.touches.length === 1) {
+                const $node = $(this);
+                const touch = e.originalEvent.touches[0];
+                
+                // Start long-press timer
+                longPressTimer = setTimeout(() => {
+                    // Trigger context menu on long press
+                    const touchEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        target: e.target,
+                        preventDefault: () => {},
+                        stopPropagation: () => {}
+                    };
+                    
+                    // Find the closest tree-node
+                    const $treeNode = $node;
+                    const uuid = $treeNode.data('uuid');
+                    const name = $treeNode.data('name');
+                    
+                    // Find the full node object from nodeMap
+                    self.contextMenuNode = self.nodeMap.get(uuid) || { uuid, name };
+                    self.contextMenu.show(touch.clientX, touch.clientY, [
+                        { id: 'view-messages', label: 'View Messages', icon: 'fa-solid fa-comments' }
+                    ]);
+                }, LONG_PRESS_DURATION);
+            }
+        });
+
+        // Long-press detection for blank space
+        $('#chat_tree_content').on('touchstart.chatTreeBlank', function(e) {
+            // Only trigger if not clicking on a tree node or expand toggle
+            if (e.touches.length === 1 && $(e.target).closest('.tree-node, .expand-toggle, .context-menu-option').length === 0) {
+                const touch = e.originalEvent.touches[0];
+                
+                // Start long-press timer
+                longPressTimer = setTimeout(() => {
+                    // Show blank area context menu
+                    self.contextMenuNode = null;
+                    self.contextMenu.show(touch.clientX, touch.clientY, [
+                        { id: 'expand-all', label: 'Expand All Nodes', icon: 'fa-solid fa-expand' },
+                        { id: 'collapse-all', label: 'Collapse All Nodes', icon: 'fa-solid fa-compress' },
+                        { id: 'find-current', label: 'Find Current Node', icon: 'fa-solid fa-crosshairs' }
+                    ]);
+                }, LONG_PRESS_DURATION);
+            }
+        });
+
+        // Cancel long-press on touch move or end (for nodes)
+        $('#chat_tree_content').on('touchmove.chatTree touchend.chatTree touchcancel.chatTree', '.tree-node', function() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // Cancel long-press on touch move or end (for blank space)
+        $('#chat_tree_content').on('touchmove.chatTreeBlank touchend.chatTreeBlank touchcancel.chatTreeBlank', function() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // Clean up long-press timer on hide
+        this.clearLongPressTimer = function() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+
         // Single unified contextmenu handler for both nodes and empty area
         $('#chat_tree_content').on('contextmenu.chatTree', function(e) {
             e.preventDefault();
@@ -947,11 +1024,16 @@ export class ChatTreeView {
     }
 
     hide() {
+        // Clear long-press timer
+        if (this.clearLongPressTimer) {
+            this.clearLongPressTimer();
+        }
+        
         $('#chat_tree_overlay').fadeOut(200, function() { $(this).remove(); });
         $('style#chat-tree-styles').remove();
         $(window).off('resize.chatTree');
         $(document).off('mousemove.chatTree mouseup.chatTree mouseleave.chatTree');
-        $('#chat_tree_content').off('mousedown.chatTree');
+        $('#chat_tree_content').off('mousedown.chatTree touchstart.chatTree touchmove.chatTree touchend.chatTree touchcancel.chatTree touchstart.chatTreeBlank touchmove.chatTreeBlank touchend.chatTreeBlank touchcancel.chatTreeBlank');
         
         // Clean up rename events
         $('#chat_tree_content').off('click.renameIcon');
