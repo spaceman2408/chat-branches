@@ -11,6 +11,12 @@ import {
     openCharacterChat,
     token
 } from '../../../../script.js';
+import {
+    selected_group,
+    groups,
+    saveGroupBookmarkChat,
+    openGroupChat,
+} from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
 import { uuidv4 } from '../../../utils.js';
 import { humanizedDateTime } from '../../../RossAscends-mods.js';
@@ -326,12 +332,19 @@ async function ensureChatUUID() {
 
     // Register with plugin if this is a new chat or newly tracked
     if (isNewChat) {
+        const characterId = selected_group
+            ? selected_group
+            : characters[this_chid]?.avatar || null;
+        const chatName = selected_group
+            ? groups?.find(x => x.id == selected_group)?.name || 'Unknown Group'
+            : characters[this_chid]?.chat || 'Unknown';
+
         await registerBranchWithPlugin({
             uuid: chat_metadata.uuid,
             parent_uuid: chat_metadata.parent_uuid || null,
             root_uuid: chat_metadata.root_uuid,
-            character_id: characters[this_chid]?.avatar || null,
-            chat_name: characters[this_chid]?.chat || 'Unknown',
+            character_id: characterId,
+            chat_name: chatName,
             branch_point: null,
             created_at: Date.now()
         });
@@ -347,7 +360,7 @@ eventSource.on(event_types.CHAT_RENAMED, async (newName) => {
     if (!extension_settings[extensionName].enabled) return;
     
     // Skip if character is not available (can happen during deletion)
-    if (!characters[this_chid] || this_chid === undefined) {
+    if (!selected_group && (!characters[this_chid] || this_chid === undefined)) {
         console.log('[Chat Branches] Character not found, skipping chat rename update');
         return;
     }
@@ -360,10 +373,15 @@ eventSource.on(event_types.CHAT_RENAMED, async (newName) => {
         return;
     }
     
-    console.log('[Chat Branches] Updating stored data with new name:', newName, 'for UUID:', uuid);
+    // For group chats, we need to get the group name
+    const chatName = selected_group
+        ? groups?.find(x => x.id == selected_group)?.name
+        : newName;
+
+    console.log('[Chat Branches] Updating stored data with new name:', chatName, 'for UUID:', uuid);
     
     await updateBranchInPlugin(uuid, {
-        chat_name: newName
+        chat_name: chatName
     });
 });
 
@@ -373,9 +391,14 @@ eventSource.on(event_types.CHAT_CHANGED, async () => {
     
     // Skip if we don't have a valid character or chat metadata
     // This can happen during character deletion
-    if (!chat_metadata?.uuid || !characters[this_chid] || this_chid === undefined) return;
+    if (!chat_metadata?.uuid) return;
     
-    const currentChatName = characters[this_chid]?.chat;
+    // For group chats, check selected_group; for character chats, check this_chid
+    if (!selected_group && (!characters[this_chid] || this_chid === undefined)) return;
+    
+    const currentChatName = selected_group
+        ? groups?.find(x => x.id == selected_group)?.name
+        : characters[this_chid]?.chat;
     const uuid = chat_metadata.uuid;
     
     // Skip if no valid chat name (can happen during deletion)
@@ -397,16 +420,18 @@ eventSource.on(event_types.CHAT_DELETED, async (chatName) => {
     // Since the chat is already deleted, we can't get it from chat_metadata
     // We'll need to query the plugin to find branches by chat_name
     
-    // If character is being deleted, skip individual chat deletions
+    // If character/group is being deleted, skip individual chat deletions
     // The CHARACTER_DELETED event will handle cleaning up all branches
-    if (!characters[this_chid] || this_chid === undefined) {
+    if (!selected_group && (!characters[this_chid] || this_chid === undefined)) {
         console.log('[Chat Branches] Character not found, skipping chat deletion (will be handled by CHARACTER_DELETED)');
         return;
     }
     
-    const characterId = characters[this_chid]?.avatar;
+    const characterId = selected_group
+        ? selected_group
+        : characters[this_chid]?.avatar;
     if (!characterId) {
-        console.warn('[Chat Branches] No character ID found, cannot delete branch');
+        console.warn('[Chat Branches] No character/group ID found, cannot delete branch');
         return;
     }
     
@@ -487,7 +512,9 @@ async function createBranchWithUUID(mesId) {
     }
 
     const lastMes = chat[mesId];
-    const mainChat = characters[this_chid].chat;
+    const mainChat = selected_group
+        ? groups?.find(x => x.id == selected_group)?.chat_id
+        : characters[this_chid]?.chat;
     const currentUUID = chat_metadata?.uuid;
     const currentRootUUID = chat_metadata?.root_uuid;
 
@@ -504,14 +531,22 @@ async function createBranchWithUUID(mesId) {
     const name = `Branch #${mesId} - ${humanizedDateTime()}`;
     
     // Save chat with ST
-    await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
+    if (selected_group) {
+        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
+    } else {
+        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
+    }
 
     // Register branch with plugin
+    const characterId = selected_group
+        ? selected_group
+        : characters[this_chid]?.avatar || null;
+
     await registerBranchWithPlugin({
         uuid: newUUID,
         parent_uuid: currentUUID,
         root_uuid: currentRootUUID || currentUUID,
-        character_id: characters[this_chid]?.avatar || null,
+        character_id: characterId,
         chat_name: name,
         branch_point: mesId,
         created_at: Date.now()
@@ -538,7 +573,13 @@ function hookBranchButton() {
         }
 
         const result = await createBranchWithUUID(Number(mesId));
-        if (result) await openCharacterChat(result);
+        if (result) {
+            if (selected_group) {
+                await openGroupChat(selected_group, result);
+            } else {
+                await openCharacterChat(result);
+            }
+        }
     });
 }
 
