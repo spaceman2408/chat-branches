@@ -39,7 +39,7 @@ export class ChatMigrator {
                 '<p><strong>This action cannot be undone.</strong></p>' +
                 '<p>Please back up your chats before proceeding.</p>' +
                 '<p>After migration, each chat and branch will get unique ids, and be registered with the server plugin.</p>' +
-                '<p><strong>Migrated chats do not get viewable trees, you are only giving them unique identifiers for tracking.</strong></p>' +
+                '<p><strong>Migrated chats do not get viewable trees, you are only giving them unique identifiers for tracking. TL;DR This makes every chat file a root chat.</strong></p>' +
                 '</div>'
             );
 
