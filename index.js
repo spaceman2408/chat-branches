@@ -12,10 +12,7 @@ import {
     token
 } from '../../../../script.js';
 import {
-    selected_group,
-    groups,
-    saveGroupBookmarkChat,
-    openGroupChat,
+    selected_group
 } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
 import { uuidv4 } from '../../../utils.js';
@@ -602,7 +599,8 @@ const chatTreeView = new ChatTreeView({
     token,
     openCharacterChat,
     extensionName,
-    pluginBaseUrl: PLUGIN_BASE_URL
+    pluginBaseUrl: PLUGIN_BASE_URL,
+    selected_group
 });
 
 // Create migrator instance with dependencies
@@ -612,7 +610,8 @@ const chatMigrator = new ChatMigrator({
     token,
     extensionName,
     uuidv4,
-    registerBranchWithPlugin
+    registerBranchWithPlugin,
+    selected_group
 });
 
 function addTreeViewButton() {
@@ -664,7 +663,8 @@ function hookMessageTreeViewButton() {
             characters,
             this_chid,
             token,
-            pluginBaseUrl: PLUGIN_BASE_URL
+            pluginBaseUrl: PLUGIN_BASE_URL,
+            selected_group
         });
         
         chatTreeView.show();
@@ -716,7 +716,8 @@ jQuery(async function() {
             characters,
             this_chid,
             token,
-            pluginBaseUrl: PLUGIN_BASE_URL
+            pluginBaseUrl: PLUGIN_BASE_URL,
+            selected_group
         });
         
         chatTreeView.show();
@@ -730,7 +731,8 @@ jQuery(async function() {
             this_chid,
             token,
             uuidv4,
-            registerBranchWithPlugin
+            registerBranchWithPlugin,
+            selected_group
         });
 
         chatMigrator.showMigrationDialog();

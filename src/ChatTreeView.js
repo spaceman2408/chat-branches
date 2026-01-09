@@ -10,6 +10,7 @@ export class ChatTreeView {
         this.openCharacterChat = dependencies.openCharacterChat;
         this.extensionName = dependencies.extensionName;
         this.pluginBaseUrl = dependencies.pluginBaseUrl;
+        this.selected_group = dependencies.selected_group;
 
         // State
         this.treeRoots = [];
@@ -65,6 +66,9 @@ export class ChatTreeView {
         if (dependencies.pluginBaseUrl) {
             this.pluginBaseUrl = dependencies.pluginBaseUrl;
         }
+        if (dependencies.selected_group !== undefined) {
+            this.selected_group = dependencies.selected_group;
+        }
         // Update rename handler dependencies
         this.renameHandler.updateDependencies(dependencies);
     }
@@ -74,6 +78,12 @@ export class ChatTreeView {
     // =========================================================================
 
     async show() {
+        // Skip group chats - this extension only works with character chats
+        if (this.selected_group) {
+            toastr.warning('Group chats are not supported by this extension.');
+            return;
+        }
+
         if (!this.this_chid && this.this_chid !== 0) {
             toastr.warning('No character selected.');
             return;

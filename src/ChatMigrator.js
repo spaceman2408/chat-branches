@@ -15,6 +15,7 @@ export class ChatMigrator {
         this.extensionName = dependencies.extensionName;
         this.uuidv4 = dependencies.uuidv4;
         this.registerBranchWithPlugin = dependencies.registerBranchWithPlugin;
+        this.selected_group = dependencies.selected_group;
 
         // State
         this.isMigrating = false;
@@ -60,6 +61,12 @@ export class ChatMigrator {
         if (this.isMigrating) return;
 
         try {
+            // Skip group chats - this extension only works with character chats
+            // Check this first, as this_chid will be undefined for group chats
+            if (this.selected_group) {
+                throw new Error('Group chats are not supported by this extension');
+            }
+
             // Validate dependencies
             if (!this.characters || this.this_chid === undefined || this.this_chid === null) {
                 throw new Error('No character selected');
@@ -373,6 +380,7 @@ export class ChatMigrator {
         if (dependencies.registerBranchWithPlugin !== undefined) {
             this.registerBranchWithPlugin = dependencies.registerBranchWithPlugin;
         }
+        if (dependencies.selected_group !== undefined) this.selected_group = dependencies.selected_group;
     }
 
     /**
