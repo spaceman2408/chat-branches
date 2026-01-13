@@ -14,3 +14,8 @@ You need the server plugin for it to work, Why? because I have to manipulate the
 
 install:
 extensions -> install extension -> https://github.com/spaceman2408/SillyTavern-ChatBranches
+
+# What it looks like
+![](https://i.imgur.com/59Sqy7G.png)
+
+![](https://i.imgur.com/r4HY3G9.png)
