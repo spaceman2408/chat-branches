@@ -65,6 +65,10 @@ export class MessageViewerPopup {
                 this.$overlay = null;
             });
         }
+        // Clear message data to free memory - important for large chats
+        this.state.messages = [];
+        this.state.swipeIndices.clear();
+        this.state.expandedMessages.clear();
         // Reset state
         this.state.chatName = null;
         this.state.chatUUID = null;
