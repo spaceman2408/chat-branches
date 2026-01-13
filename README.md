@@ -1,5 +1,7 @@
 # NOTE
-While you are free to use this extension however you see fit, I made this for personal use so it may be buggy or not work for you. At the moment it's not something I plan to release officially, but if you do use it and find issues you can reach out to me. Otherwise, feel free to fork and modify it as needed.
+While you are free to use this extension however you see fit, I made this for personal use so it may be buggy or not work for you. At the moment it's not something I plan to release officially, but if you do use it and find issues you can reach out to me. Otherwise, feel free to clone and modify it as needed for you but don't forget the plugin as well. 
+
+Just so you don't expect crazy code quality, it was 100% vibe coded using kiro and claude opus. I know I don't use getContext as well, I learned of that after most of the code was written. And didn't feel like refactoring it all.
 
 > Currently DOES NOT support group chats
 
