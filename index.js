@@ -320,16 +320,48 @@ async function ensureChatUUID() {
     if (selected_group) {
         return;
     }
-    
+
     if (!extension_settings[extensionName].enabled || !chat_metadata) return;
 
     let isNewChat = false;
 
-    // Generate UUIDs if missing
+    // Check if we need to generate UUIDs
     if (!chat_metadata.uuid) {
+        const characterId = characters[this_chid]?.avatar || null;
+        const chatName = characters[this_chid]?.chat || 'Unknown';
+
+        // Check if a branch already exists for this chat
+        try {
+            const response = await fetch(`${PLUGIN_BASE_URL}/branches?chat_name=${encodeURIComponent(chatName)}`, {
+                headers: { 'X-CSRF-Token': token }
+            });
+            const data = await response.json();
+            if (data.success && data.branches.length > 0) {
+                // Find branch for this character
+                const existingBranch = data.branches.find(b => b.character_id === characterId && b.chat_name === chatName);
+                if (existingBranch) {
+                    // Reuse existing branch data
+                    chat_metadata.uuid = existingBranch.uuid;
+                    chat_metadata.root_uuid = existingBranch.root_uuid;
+                    chat_metadata.parent_uuid = existingBranch.parent_uuid;
+                    console.log('[Chat Branches] Found existing branch for chat:', chatName, 'uuid:', existingBranch.uuid);
+
+                    // Update the branch with current info if needed
+                    await updateBranchInPlugin(existingBranch.uuid, {
+                        chat_name: chatName
+                    });
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('[Chat Branches] Error checking for existing branch:', error);
+        }
+
+        // No existing branch, create new
         chat_metadata.uuid = uuidv4();
         isNewChat = true;
     }
+
     if (!chat_metadata.root_uuid) {
         chat_metadata.root_uuid = chat_metadata.uuid;
     }
