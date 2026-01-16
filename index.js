@@ -200,20 +200,10 @@ async function deleteBranchFromPlugin(uuid, cascade = false) {
 
 function updateMigrationButtonState(isEnabled) {
     const migrateButton = $('#chat_branches_migrate');
-    if (isEnabled && pluginRunning) {
-        migrateButton.removeClass('disabled');
-        migrateButton.removeAttr('data-disabled-title');
-        migrateButton.attr('title', 'Migrate all chats');
-    } else {
-        migrateButton.addClass('disabled');
-        if (!pluginRunning) {
-            migrateButton.attr('data-disabled-title', 'Plugin not installed');
-            migrateButton.attr('title', 'Migrate all chats (plugin not available)');
-        } else {
-            migrateButton.attr('data-disabled-title', 'Extension is disabled');
-            migrateButton.attr('title', 'Migrate all chats (disabled)');
-        }
-    }
+    // Always disable the migrate button
+    migrateButton.addClass('disabled');
+    migrateButton.attr('data-disabled-title', 'Migrate button disabled');
+    migrateButton.attr('title', 'Migrate all chats (disabled)');
 }
 
 function updateTreeViewButtonsState(enabled) {
@@ -808,6 +798,7 @@ jQuery(async function() {
         chatTreeView.show();
     });
 
+    /*
     // Bind migration button click
     $(document).on('click', '#chat_branches_migrate', function() {
         // Update dependencies before migrating (this_chid may have changed)
@@ -822,6 +813,7 @@ jQuery(async function() {
 
         chatMigrator.showMigrationDialog();
     });
+    */
 
     // Bind install plugin button click
     $(document).on('click', '#chat_branches_install_plugin', async function() {
