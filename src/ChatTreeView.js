@@ -202,6 +202,10 @@ export class ChatTreeView {
 
         // Process all root nodes
         this.allTreeRoots = treeArray.map(root => processNode(root));
+        // Deduplicate roots by UUID to prevent duplicate dropdown entries
+        this.allTreeRoots = this.allTreeRoots.filter((root, index, self) =>
+            self.findIndex(r => r.id === root.id) === index
+        );
         this.treeRoots = [...this.allTreeRoots]; // Initialize with all roots
     }
 
