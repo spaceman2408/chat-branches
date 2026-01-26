@@ -367,6 +367,13 @@ async function ensureChatUUID() {
 
     // Register with plugin if this is a new chat or newly tracked
     if (isNewChat) {
+        // Validate we have valid character data before registering
+        if (!characters[this_chid] || !characters[this_chid].chat || characters[this_chid].chat === 'Unknown') {
+            console.log('[Chat Branches] Character data not ready, skipping plugin registration');
+            // UUID is already saved in chat_metadata, so it will be registered properly when chat loads
+            return;
+        }
+
         const characterId = characters[this_chid]?.avatar || null;
         const chatName = String(characters[this_chid]?.chat || 'Unknown');
 
@@ -435,8 +442,8 @@ eventSource.on(event_types.CHAT_CHANGED, async () => {
     const currentChatName = characters[this_chid]?.chat;
     const uuid = chat_metadata.uuid;
     
-    // Skip if no valid chat name (can happen during deletion)
-    if (!currentChatName) return;
+    // Skip if no valid chat name (can happen during deletion or initialization)
+    if (!currentChatName || currentChatName === 'Unknown') return;
     
     // Update plugin with current name to ensure consistency
     await updateBranchInPlugin(uuid, {
