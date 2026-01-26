@@ -452,7 +452,7 @@ eventSource.on(event_types.CHAT_CHANGED, async () => {
     // Skip checkpoint chats - they are bookmarks, not true branches
     const currentChatName = characters[this_chid]?.chat;
     if (isCheckpointChat(currentChatName)) {
-        console.log('[Chat Branches] Skipping checkpoint chat:', currentChatName);
+        console.debug('[Chat Branches] Skipping checkpoint chat:', currentChatName);
         return;
     }
     

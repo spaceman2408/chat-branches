@@ -140,13 +140,36 @@ export class ChatTreeView {
 
         // Bind the back to main button
         $('#checkpoint_back_to_main').on('click', async () => {
-            const mainChatName = this.characters[this.this_chid]?.chat_metadata?.main_chat;
+            // Try multiple methods to find the parent chat name
+            let mainChatName = null;
+            
+            // Method 1: Use chat_metadata.main_chat if available
+            if (this.characters[this.this_chid]?.chat_metadata?.main_chat) {
+                mainChatName = this.characters[this.this_chid].chat_metadata.main_chat;
+            }
+            
+            // Method 2: Extract from current chat name by removing the checkpoint suffix
+            if (!mainChatName && this.currentChatFile) {
+                // Remove " - Checkpoint #X" suffix
+                mainChatName = this.currentChatFile.replace(/ - Checkpoint #\d+$/, '');
+            }
+
             if (mainChatName) {
-                await this.openCharacterChat(mainChatName);
-                this.hide();
-                // Show the tree view with the main chat
-                this.show();
+                // Verify the chat exists before attempting to open it
+                const chatExists = await this.verifyChatExists(mainChatName);
+                
+                if (chatExists) {
+                    console.log('[Chat Branches] Returning to parent chat:', mainChatName);
+                    await this.openCharacterChat(mainChatName);
+                    this.hide();
+                    // Show the tree view with the main chat
+                    this.show();
+                } else {
+                    console.warn('[Chat Branches] Parent chat does not exist:', mainChatName);
+                    toastr.error(`Parent chat "${mainChatName}" no longer exists. The checkpoint is orphaned.`);
+                }
             } else {
+                console.warn('[Chat Branches] Could not find parent chat for checkpoint:', this.currentChatFile);
                 toastr.warning('Could not find parent chat for this checkpoint.');
             }
         });
@@ -881,6 +904,66 @@ export class ChatTreeView {
     // =========================================================================
     // UTILITIES
     // =========================================================================
+
+    /**
+     * Verify if a chat exists for the current character
+     * @param {string} chatName - The chat name to verify
+     * @returns {Promise<boolean>} - True if the chat exists
+     */
+    async verifyChatExists(chatName) {
+        if (!this.characters[this.this_chid]) {
+            return false;
+        }
+
+        // Check the character's chat list
+        const character = this.characters[this.this_chid];
+        
+        // Method 1: Check if chat is in the character's chat_items array
+        if (character.chat_items && Array.isArray(character.chat_items)) {
+            const chatExists = character.chat_items.some(chat => {
+                // Chat items can be strings or objects with a file property
+                const chatFile = typeof chat === 'object' ? chat.file : chat;
+                return chatFile === chatName;
+            });
+            if (chatExists) return true;
+        }
+
+        // Method 2: Check via the plugin's tree data (more reliable)
+        try {
+            const characterId = character.avatar;
+            const response = await fetch(`${this.pluginBaseUrl}/tree/${characterId}`, {
+                headers: {
+                    'X-CSRF-Token': this.token
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.tree) {
+                    // Search for the chat in the tree
+                    const findChatInTree = (nodes) => {
+                        for (const node of nodes) {
+                            if (node.chat_name === chatName) {
+                                return true;
+                            }
+                            if (node.children && node.children.length > 0) {
+                                if (findChatInTree(node.children)) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    };
+                    
+                    return findChatInTree(data.tree);
+                }
+            }
+        } catch (error) {
+            console.error('[Chat Branches] Error verifying chat existence:', error);
+        }
+
+        return false;
+    }
 
     async renderModalSkeleton() {
         $('#chat_tree_overlay').remove();
