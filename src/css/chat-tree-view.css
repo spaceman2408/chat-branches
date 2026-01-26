@@ -421,17 +421,89 @@
     width: 100%;
 }
 
+/* ==========================================================================
+   CHECKPOINT WARNING
+   ========================================================================== */
+.chat-tree-checkpoint-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px;
+    text-align: center;
+}
+
+.checkpoint-warning-icon {
+    color: var(--tree-accent);
+    margin-bottom: 24px;
+    opacity: 0.8;
+}
+
+.chat-tree-checkpoint-warning h3 {
+    margin: 0 0 16px 0;
+    color: var(--tree-text);
+    font-size: 24px;
+}
+
+.chat-tree-checkpoint-warning p {
+    margin: 0 0 12px 0;
+    color: var(--tree-text);
+    font-size: 14px;
+    opacity: 0.8;
+    max-width: 400px;
+}
+
+.checkpoint-warning-actions {
+    margin-top: 32px;
+}
+
+.chat-tree-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--tree-accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chat-tree-button.primary {
+    background: var(--tree-success);
+    color: #000;
+}
+
+.chat-tree-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chat-tree-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
-    .rename-input {
-        max-width: 120px;
-        font-size: 12px;
+    .chat-tree-checkpoint-warning {
+        padding: 20px;
     }
-    
-    .rename-confirm,
-    .rename-cancel {
-        width: 28px;
-        height: 28px;
-        font-size: 14px;
+
+    .chat-tree-checkpoint-warning h3 {
+        font-size: 20px;
+    }
+
+    .chat-tree-checkpoint-warning p {
+        font-size: 13px;
+    }
+
+    .chat-tree-button {
+        padding: 12px 16px;
+        font-size: 13px;
     }
 }

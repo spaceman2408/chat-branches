@@ -6,6 +6,16 @@
 
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../../../scripts/popup.js';
 
+/**
+ * Check if a chat is a checkpoint (bookmark)
+ * Checkpoints are identified by the pattern 'Checkpoint #' in the chat name
+ * @param {string} chatName - The chat name to check
+ * @returns {boolean} - True if the chat is a checkpoint
+ */
+function isCheckpointChat(chatName) {
+    return chatName && chatName.includes('Checkpoint #');
+}
+
 export class StorageRebuilder {
     constructor(dependencies) {
         // Store dependencies
@@ -268,6 +278,13 @@ export class StorageRebuilder {
 
                 try {
                     this.updateProgress(i, chats.length, `Reading ${chatName}...`);
+
+                    // Skip checkpoint chats - they are bookmarks, not true branches
+                    if (isCheckpointChat(chatName)) {
+                        console.log(`[StorageRebuilder] Skipping checkpoint chat: ${chatName}`);
+                        skippedCount++;
+                        continue;
+                    }
 
                     // Fetch the full chat data
                     const fullChatData = await this.fetchFullChatData(character, chatName);

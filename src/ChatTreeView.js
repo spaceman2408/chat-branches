@@ -2,6 +2,16 @@ import { ContextMenu } from './ContextMenu.js';
 import { MessageViewerPopup } from './MessageViewerPopup.js';
 import { ChatRenameHandler } from './ChatRenameHandler.js';
 
+/**
+ * Check if a chat is a checkpoint (bookmark)
+ * Checkpoints are identified by the pattern 'Checkpoint #' in the chat name
+ * @param {string} chatName - The chat name to check
+ * @returns {boolean} - True if chat is a checkpoint
+ */
+function isCheckpointChat(chatName) {
+    return chatName && chatName.includes('Checkpoint #');
+}
+
 export class ChatTreeView {
     constructor(dependencies) {
         this.characters = dependencies.characters;
@@ -95,11 +105,51 @@ export class ChatTreeView {
             return;
         }
 
+        // Check if current chat is a checkpoint
+        if (isCheckpointChat(this.currentChatFile)) {
+            await this.renderModalSkeleton();
+            this.showCheckpointWarning();
+            return;
+        }
+
         // Get current chat UUID from metadata
         this.currentChatUUID = this.characters[this.this_chid]?.chat_metadata?.uuid || null;
 
         await this.renderModalSkeleton();
         await this.loadAndBuildTree();
+    }
+
+    showCheckpointWarning() {
+        const $container = $('#chat_tree_content');
+        $container.html(`
+            <div class="chat-tree-checkpoint-warning">
+                <div class="checkpoint-warning-icon">
+                    <i class="fa-solid fa-bookmark fa-3x"></i>
+                </div>
+                <h3>Checkpoint Chat</h3>
+                <p>You are currently viewing a checkpoint (bookmark) chat.</p>
+                <p>Checkpoints are bookmarks that link to a parent chat and are not tracked as branches in the tree view.</p>
+                <div class="checkpoint-warning-actions">
+                    <button id="checkpoint_back_to_main" class="chat-tree-button primary">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Back to Parent Chat</span>
+                    </button>
+                </div>
+            </div>
+        `);
+
+        // Bind the back to main button
+        $('#checkpoint_back_to_main').on('click', async () => {
+            const mainChatName = this.characters[this.this_chid]?.chat_metadata?.main_chat;
+            if (mainChatName) {
+                await this.openCharacterChat(mainChatName);
+                this.hide();
+                // Show the tree view with the main chat
+                this.show();
+            } else {
+                toastr.warning('Could not find parent chat for this checkpoint.');
+            }
+        });
     }
 
     async loadAndBuildTree() {

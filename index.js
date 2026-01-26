@@ -207,6 +207,16 @@ async function deleteBranchFromPlugin(uuid, cascade = false) {
 // Helper Functions
 // ============================================================================
 
+/**
+ * Check if a chat is a checkpoint (bookmark)
+ * Checkpoints are identified by the pattern 'Checkpoint #' in the chat name
+ * @param {string} chatName - The chat name to check
+ * @returns {boolean} - True if chat is a checkpoint
+ */
+function isCheckpointChat(chatName) {
+    return chatName && chatName.includes('Checkpoint #');
+}
+
 function updateMigrationButtonState(isEnabled) {
     const migrateButton = $('#chat_branches_migrate');
     // Always disable the migrate button
@@ -322,6 +332,13 @@ async function ensureChatUUID() {
 
     if (!extension_settings[extensionName].enabled || !chat_metadata) return;
 
+    // Skip checkpoint chats - they are bookmarks, not true branches
+    const currentChatName = characters[this_chid]?.chat;
+    if (isCheckpointChat(currentChatName)) {
+        console.log('[Chat Branches] Skipping checkpoint chat:', currentChatName);
+        return;
+    }
+
     let isNewChat = false;
 
     // Check if we need to generate UUIDs
@@ -432,6 +449,13 @@ eventSource.on(event_types.CHAT_CHANGED, async () => {
     
     if (!extension_settings[extensionName].enabled) return;
     
+    // Skip checkpoint chats - they are bookmarks, not true branches
+    const currentChatName = characters[this_chid]?.chat;
+    if (isCheckpointChat(currentChatName)) {
+        console.log('[Chat Branches] Skipping checkpoint chat:', currentChatName);
+        return;
+    }
+    
     // Skip if we don't have a valid character or chat metadata
     // This can happen during character deletion
     if (!chat_metadata?.uuid) return;
@@ -439,7 +463,6 @@ eventSource.on(event_types.CHAT_CHANGED, async () => {
     // For character chats, check this_chid
     if (!characters[this_chid] || this_chid === undefined) return;
     
-    const currentChatName = characters[this_chid]?.chat;
     const uuid = chat_metadata.uuid;
     
     // Skip if no valid chat name (can happen during deletion or initialization)
