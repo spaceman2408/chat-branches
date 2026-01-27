@@ -583,8 +583,15 @@ async function createBranchWithUUID(mesId) {
         return;
     }
 
-    const lastMes = chat[mesId];
     const mainChat = characters[this_chid]?.chat;
+    
+    // Check if current chat is a checkpoint - don't allow branching from checkpoints
+    if (isCheckpointChat(mainChat)) {
+        toastr.info('Cannot create branches from checkpoint chats. Checkpoints are bookmarks and not tracked in the branch tree.', 'Chat Branches');
+        return null;
+    }
+
+    const lastMes = chat[mesId];
     const currentUUID = chat_metadata?.uuid;
     const currentRootUUID = chat_metadata?.root_uuid;
 

@@ -111,8 +111,7 @@ export class ChatTreeView {
 
         // Check if current chat is a checkpoint
         if (isCheckpointChat(this.currentChatFile)) {
-            await this.renderModalSkeleton();
-            this.showCheckpointWarning();
+            toastr.info('You are viewing a checkpoint (bookmark) chat. Checkpoints are not tracked in the branch tree.', 'Chat Branches');
             return;
         }
 
@@ -121,62 +120,6 @@ export class ChatTreeView {
 
         await this.renderModalSkeleton();
         await this.loadAndBuildTree();
-    }
-
-    showCheckpointWarning() {
-        const $container = $('#chat_tree_content');
-        $container.html(`
-            <div class="chat-tree-checkpoint-warning">
-                <div class="checkpoint-warning-icon">
-                    <i class="fa-solid fa-bookmark fa-3x"></i>
-                </div>
-                <h3>Checkpoint Chat</h3>
-                <p>You are currently viewing a checkpoint (bookmark) chat.</p>
-                <p>Checkpoints are bookmarks that link to a parent chat and are not tracked as branches in the tree view.</p>
-                <div class="checkpoint-warning-actions">
-                    <button id="checkpoint_back_to_main" class="chat-tree-button primary">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Back to Parent Chat</span>
-                    </button>
-                </div>
-            </div>
-        `);
-
-        // Bind the back to main button
-        $('#checkpoint_back_to_main').on('click', async () => {
-            // Try multiple methods to find the parent chat name
-            let mainChatName = null;
-            
-            // Method 1: Use chat_metadata.main_chat if available
-            if (this.characters[this.this_chid]?.chat_metadata?.main_chat) {
-                mainChatName = this.characters[this.this_chid].chat_metadata.main_chat;
-            }
-            
-            // Method 2: Extract from current chat name by removing the checkpoint suffix
-            if (!mainChatName && this.currentChatFile) {
-                // Remove " - Checkpoint #X" suffix
-                mainChatName = this.currentChatFile.replace(/ - Checkpoint #\d+$/, '');
-            }
-
-            if (mainChatName) {
-                // Verify the chat exists before attempting to open it
-                const chatExists = await this.verifyChatExists(mainChatName);
-                
-                if (chatExists) {
-                    console.log('[Chat Branches] Returning to parent chat:', mainChatName);
-                    await this.openCharacterChat(mainChatName);
-                    this.hide();
-                    // Show the tree view with the main chat
-                    this.show();
-                } else {
-                    console.warn('[Chat Branches] Parent chat does not exist:', mainChatName);
-                    toastr.error(`Parent chat "${mainChatName}" no longer exists. The checkpoint is orphaned.`);
-                }
-            } else {
-                console.warn('[Chat Branches] Could not find parent chat for checkpoint:', this.currentChatFile);
-                toastr.warning('Could not find parent chat for this checkpoint.');
-            }
-        });
     }
 
     async loadAndBuildTree() {
