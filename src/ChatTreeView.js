@@ -701,7 +701,16 @@ export class ChatTreeView {
         
         try {
             await this.openCharacterChat(chatName);
-            this.currentChatFile = String(chatName);
+            
+            // Wait a moment for SillyTavern to fully load the chat and update chat_metadata
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Update our state from the newly loaded chat
+            this.currentChatFile = String(this.characters[this.this_chid]?.chat || chatName);
+            this.currentChatUUID = this.chat_metadata?.uuid || null;
+            
+            console.log('[Chat Branches] Swapped to chat:', this.currentChatFile, 'UUID:', this.currentChatUUID);
+            
             await this.loadAndBuildTree();
             
             toastr.success('Chat switched successfully');

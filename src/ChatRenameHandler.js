@@ -214,8 +214,7 @@ export class ChatRenameHandler {
             // Ensure chatName doesn't have .jsonl extension
             const cleanChatName = chatName.replace(/\.jsonl$/i, '');
             
-            // Get the current chat metadata
-            // Note: SillyTavern's /api/chats/get expects file_name WITHOUT .jsonl extension
+            // Get the current chat data
             const getResponse = await fetch('/api/chats/get', {
                 method: 'POST',
                 headers: {
@@ -224,7 +223,7 @@ export class ChatRenameHandler {
                 },
                 body: JSON.stringify({
                     ch_name: characterAvatar,
-                    file_name: cleanChatName, // Send without .jsonl
+                    file_name: cleanChatName,
                     avatar_url: characterAvatar
                 })
             });
@@ -236,14 +235,27 @@ export class ChatRenameHandler {
 
             const chatData = await getResponse.json();
             
-            // Ensure chat_metadata exists and has the UUID
-            if (!chatData.chat_metadata) {
-                chatData.chat_metadata = {};
+            // chatData is an array where first element is the header with metadata
+            // and the rest are messages
+            if (!Array.isArray(chatData) || chatData.length === 0) {
+                console.warn('[ChatRenameHandler] Chat data is empty or invalid format');
+                return;
             }
-            chatData.chat_metadata.uuid = uuid;
 
-            // Save the updated metadata
-            // Note: SillyTavern's /api/chats/save also expects file_name WITHOUT .jsonl extension
+            // Extract header (first element) and messages (rest)
+            const header = chatData[0];
+            const messages = chatData.slice(1);
+            
+            // Ensure chat_metadata exists in header and has the UUID
+            if (!header.chat_metadata) {
+                header.chat_metadata = {};
+            }
+            header.chat_metadata.uuid = uuid;
+
+            // Reconstruct the full chat array with updated header
+            const updatedChatData = [header, ...messages];
+
+            // Save the updated chat
             const saveResponse = await fetch('/api/chats/save', {
                 method: 'POST',
                 headers: {
@@ -252,8 +264,8 @@ export class ChatRenameHandler {
                 },
                 body: JSON.stringify({
                     ch_name: characterAvatar,
-                    file_name: cleanChatName, // Send without .jsonl
-                    chat: chatData.chat || [],
+                    file_name: cleanChatName,
+                    chat: updatedChatData,
                     avatar_url: characterAvatar
                 })
             });
@@ -261,7 +273,8 @@ export class ChatRenameHandler {
             if (saveResponse.ok) {
                 console.log('[ChatRenameHandler] UUID metadata restored successfully');
             } else {
-                console.warn('[ChatRenameHandler] Failed to save UUID metadata:', saveResponse.status);
+                const errorText = await saveResponse.text();
+                console.warn('[ChatRenameHandler] Failed to save UUID metadata:', saveResponse.status, errorText);
             }
         } catch (error) {
             console.error('[ChatRenameHandler] Error restoring UUID metadata:', error);
